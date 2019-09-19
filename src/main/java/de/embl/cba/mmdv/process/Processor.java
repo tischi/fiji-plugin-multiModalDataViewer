@@ -1,8 +1,8 @@
-package de.embl.cba.templatematching.process;
+package de.embl.cba.mmdv.process;
 
-import de.embl.cba.templatematching.Utils;
-import de.embl.cba.templatematching.image.CalibratedRai;
-import de.embl.cba.templatematching.image.DefaultCalibratedRai;
+import de.embl.cba.mmdv.Utils;
+import de.embl.cba.mmdv.image.CalibratedRai;
+import de.embl.cba.mmdv.image.DefaultCalibratedRai;
 import de.embl.cba.transforms.utils.Scalings;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
@@ -18,7 +18,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
 
-import static de.embl.cba.templatematching.Utils.showIntermediateResult;
+import static de.embl.cba.mmdv.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
 import static de.embl.cba.transforms.utils.Transforms.createTransformedView;
 

@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching.bdv;
+package de.embl.cba.mmdv.bdv;
 
 import bdv.util.BdvSource;
 import mpicbg.spim.data.SpimData;
@@ -12,25 +12,25 @@ import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfte
 
 public class ImageSource
 {
-	private final File file;
+	private final String filePath;
 	private final BdvSource bdvSource;
 	private final SpimData spimData;
 
-	public ImageSource( File file, BdvSource bdvSource, SpimData spimData )
+	public ImageSource( String filePath, BdvSource bdvSource, SpimData spimData )
 	{
-		this.file = file;
+		this.filePath = filePath;
 		this.bdvSource = bdvSource;
 		this.spimData = spimData;
 	}
 
 	public String getName()
 	{
-		return file.getName().split( "\\." )[ 0 ];
+		return filePath.split( "\\." )[ 0 ];
 	}
 
-	public File getFile()
+	public String getFilePath()
 	{
-		return file;
+		return filePath;
 	}
 
 	public FinalInterval getInterval()

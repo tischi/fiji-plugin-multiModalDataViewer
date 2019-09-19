@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching.bdv;
+package de.embl.cba.mmdv.bdv;
 
 import bdv.BehaviourTransformEventHandler;
 import bdv.BehaviourTransformEventHandlerFactory;
@@ -80,7 +80,7 @@ public class BehaviourTransformEventHandler3DWithoutRotation implements Behaviou
 
 	/**
 	 * Screen coordinates to keep centered while zooming or rotating with the
-	 * keyboard. These are set to <templatematching>(canvasW/2, canvasH/2)</templatematching>
+	 * keyboard. These are set to <mmdv>(canvasW/2, canvasH/2)</mmdv>
 	 */
 	protected int centerX = 0, centerY = 0;
 
@@ -101,7 +101,7 @@ public class BehaviourTransformEventHandler3DWithoutRotation implements Behaviou
 		final String[] speedMod =   {  "", "shift ", "ctrl " };
 
 		final String DRAG_ROTATE = "drag rotate";
-		final String SCROLL_Z = "scroll browse z";
+		final String SCROLL_Z = "scroll viewer z";
 		final String ROTATE_LEFT = "rotate left";
 		final String ROTATE_RIGHT = "rotate right";
 		final String KEY_ZOOM_IN = "zoom in";
@@ -213,7 +213,7 @@ public class BehaviourTransformEventHandler3DWithoutRotation implements Behaviou
 			"Mouse control:" + NL + " " + NL +
 					"Pan and tilt the volume by left-click and dragging the image in the canvas, " + NL +
 					"move the volume by middle-or-right-click and dragging the image in the canvas, " + NL +
-					"browse alongside the z-axis using the mouse-wheel, and" + NL +
+					"viewer alongside the z-axis using the mouse-wheel, and" + NL +
 					"zoom in and out using the mouse-wheel holding CTRL+SHIFT or META." + NL + " " + NL +
 					"Key control:" + NL + " " + NL +
 					"X - Select x-axis as rotation axis." + NL +
@@ -225,8 +225,8 @@ public class BehaviourTransformEventHandler3DWithoutRotation implements Behaviou
 					"CURSOR DOWN - Zoom out." + NL +
 					"./> - Forward alongside z-axis." + NL +
 					",/< - Backward alongside z-axis." + NL +
-					"SHIFT - Rotate and browse 10x faster." + NL +
-					"CTRL - Rotate and browse 10x slower.";
+					"SHIFT - Rotate and viewer 10x faster." + NL +
+					"CTRL - Rotate and viewer 10x slower.";
 
 	private void scale( final double s, final double x, final double y )
 	{

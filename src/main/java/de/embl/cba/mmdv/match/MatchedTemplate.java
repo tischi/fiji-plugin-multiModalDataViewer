@@ -1,6 +1,6 @@
-package de.embl.cba.templatematching.match;
+package de.embl.cba.mmdv.match;
 
-import de.embl.cba.templatematching.image.CalibratedRai;
+import de.embl.cba.mmdv.image.CalibratedRai;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 

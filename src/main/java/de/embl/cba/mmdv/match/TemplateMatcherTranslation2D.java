@@ -1,7 +1,7 @@
-package de.embl.cba.templatematching.match;
+package de.embl.cba.mmdv.match;
 
-import de.embl.cba.templatematching.image.CalibratedRai;
-import de.embl.cba.templatematching.Utils;
+import de.embl.cba.mmdv.image.CalibratedRai;
+import de.embl.cba.mmdv.Utils;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
@@ -15,8 +15,8 @@ import net.imglib2.type.numeric.RealType;
 
 import java.util.ArrayList;
 
-import static de.embl.cba.templatematching.Utils.*;
-import static de.embl.cba.templatematching.process.Processor.*;
+import static de.embl.cba.mmdv.Utils.*;
+import static de.embl.cba.mmdv.process.Processor.*;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
 public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType< T > >

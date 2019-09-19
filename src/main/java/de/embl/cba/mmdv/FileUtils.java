@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching;
+package de.embl.cba.mmdv;
 
 import java.io.File;
 import java.util.ArrayList;

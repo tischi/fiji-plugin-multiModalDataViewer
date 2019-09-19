@@ -1,9 +1,9 @@
-package de.embl.cba.templatematching;
+package de.embl.cba.mmdv;
 
 import bdv.ViewerImgLoader;
 import bdv.ViewerSetupImgLoader;
 import bdv.util.Bdv;
-import de.embl.cba.templatematching.image.CalibratedRai;
+import de.embl.cba.mmdv.image.CalibratedRai;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ByteProcessor;
@@ -633,4 +633,25 @@ public class Utils
 		return image;
 	}
 
+	public static void fetchImageSources( String directoryName, List<File> files)
+	{
+		File directory = new File( directoryName );
+
+		File[] fList = directory.listFiles();
+		if ( fList != null )
+			for ( File file : fList )
+				if ( file.isFile() )
+					if ( isValid( file ) )
+						files.add( file );
+					else if ( file.isDirectory() )
+						fetchImageSources( file.getAbsolutePath(), files );
+	}
+
+	public static boolean isValid( File file )
+	{
+		if ( file.getName().endsWith( ".xml" ) )
+			return true;
+		else
+			return false;
+	}
 }

@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching.image;
+package de.embl.cba.mmdv.image;
 
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;

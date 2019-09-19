@@ -1,13 +1,13 @@
-package de.embl.cba.templatematching.match;
+package de.embl.cba.mmdv.match;
 
 import de.embl.cba.bdv.utils.io.BdvRaiXYZCTExport;
-import de.embl.cba.templatematching.FileUtils;
-import de.embl.cba.templatematching.ImageIO;
-import de.embl.cba.templatematching.Utils;
-import de.embl.cba.templatematching.image.CalibratedRai;
-import de.embl.cba.templatematching.image.CalibratedRaiPlus;
-import de.embl.cba.templatematching.image.DefaultCalibratedRai;
-import de.embl.cba.templatematching.process.Processor;
+import de.embl.cba.mmdv.FileUtils;
+import de.embl.cba.mmdv.ImageIO;
+import de.embl.cba.mmdv.Utils;
+import de.embl.cba.mmdv.image.CalibratedRai;
+import de.embl.cba.mmdv.image.CalibratedRaiPlus;
+import de.embl.cba.mmdv.image.DefaultCalibratedRai;
+import de.embl.cba.mmdv.process.Processor;
 import ij.ImagePlus;
 import ij.gui.*;
 import net.imglib2.RandomAccessibleInterval;

@@ -1,6 +1,6 @@
-package de.embl.cba.templatematching;
+package de.embl.cba.mmdv;
 
-import de.embl.cba.templatematching.image.CalibratedRaiPlus;
+import de.embl.cba.mmdv.image.CalibratedRaiPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;

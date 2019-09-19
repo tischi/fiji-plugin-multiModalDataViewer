@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching.match;
+package de.embl.cba.mmdv.match;
 
 import ij.*;
 import ij.process.*;

@@ -1,6 +1,6 @@
-package de.embl.cba.templatematching.image;
+package de.embl.cba.mmdv.image;
 
-import de.embl.cba.templatematching.Utils;
+import de.embl.cba.mmdv.Utils;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;

@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching;
+package de.embl.cba.mmdv;
 
 import javax.swing.*;
 
