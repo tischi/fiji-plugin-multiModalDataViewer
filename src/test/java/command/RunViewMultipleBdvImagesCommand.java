@@ -1,9 +1,9 @@
 package command;
 
-import de.embl.cba.mmdv.command.ViewMultipleBdvImages;
+import de.embl.cba.mmdv.command.ViewMultipleBdvImagesCommand;
 import net.imagej.ImageJ;
 
-public class RunViewMultipleBdvImages
+public class RunViewMultipleBdvImagesCommand
 {
 	public static void main(final String... args)
 	{
@@ -11,6 +11,6 @@ public class RunViewMultipleBdvImages
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( ViewMultipleBdvImages.class, true );
+		ij.command().run( ViewMultipleBdvImagesCommand.class, true );
 	}
 }

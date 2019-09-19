@@ -9,7 +9,7 @@ import org.scijava.plugin.Plugin;
 import java.io.File;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Multi Modal Data Viewer>View Multiple XML/HDF5 Images" )
-public class ViewMultipleBdvImages implements Command
+public class ViewMultipleBdvImagesCommand implements Command
 {
 	@Parameter ( visibility = ItemVisibility.MESSAGE  )
 	String message = "Select images";

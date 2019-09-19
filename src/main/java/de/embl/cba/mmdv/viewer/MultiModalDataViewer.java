@@ -37,13 +37,31 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	public MultiModalDataViewer( List< String > inputFilePaths )
 	{
 		this.inputFilePaths = inputFilePaths;
-		showImages();
-		// showUI();
+		run();
 	}
 
 	public MultiModalDataViewer( String[] inputFilePaths )
 	{
-		this( Arrays.asList( inputFilePaths ) );
+		this.inputFilePaths = Arrays.asList( inputFilePaths );
+		run();
+	}
+
+	public MultiModalDataViewer( File[] inputFiles )
+	{
+		final List< File > files = Arrays.asList( inputFiles );
+
+		this.inputFilePaths = new ArrayList< >();
+		for (int i = 0; i < files.size(); i++)
+			this.inputFilePaths.add( files.get( i ).getAbsolutePath() );
+
+		run();
+	}
+
+	private void run( )
+	{
+		imageSources = new ArrayList<>(  );
+		showImages();
+		// showUI();
 	}
 
 	private void showUI()
