@@ -1,8 +1,12 @@
 package de.embl.cba.mmdv.viewer;
 
 import bdv.util.*;
+import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.bdv.utils.io.SPIMDataReaders;
+import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
+import de.embl.cba.bdv.utils.sources.ARGBConvertedRealSource;
 import de.embl.cba.mmdv.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.mmdv.bdv.ImageSource;
 import mpicbg.spim.data.SpimData;
@@ -13,6 +17,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.volatiles.VolatileARGBType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
@@ -30,10 +35,6 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private List< ImageSource > imageSources;
 	private double contrastFactor = 0.1;
 
-	public static final ARGBType OVERVIEW_EM_COLOR =
-			new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
-
-
 	public MultiModalDataViewer( List< String > inputFilePaths )
 	{
 		this.inputFilePaths = inputFilePaths;
@@ -48,13 +49,17 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 	public MultiModalDataViewer( File[] inputFiles )
 	{
+		setInputFilePaths( inputFiles );
+		run();
+	}
+
+	private void setInputFilePaths( File[] inputFiles )
+	{
 		final List< File > files = Arrays.asList( inputFiles );
 
 		this.inputFilePaths = new ArrayList< >();
 		for (int i = 0; i < files.size(); i++)
 			this.inputFilePaths.add( files.get( i ).getAbsolutePath() );
-
-		run();
 	}
 
 	private void run( )
@@ -80,35 +85,32 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 	private void addToBdv( String filePath )
 	{
-		final SpimData spimData = openSpimData( filePath );
+//		final SpimData spimData = openSpimData( filePath );
+
+		final Source< VolatileARGBType > source = SPIMDataReaders.openAsVolatileARGBTypeSource( filePath, 0 );
 
 		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
-				spimData,
+				source,
 				BdvOptions.options()
 						.addTo( bdv )
+						.accumulateProjectorFactory( AccumulateEMAndFMProjectorARGB.factory )
 						.preferredSize( 800, 800 )
 						.transformEventHandlerFactory(
 								new BehaviourTransformEventHandler3DWithoutRotation
 										.BehaviourTransformEventHandler3DFactory() )
-				).get( 0 );
+				);
 
 
 //		new Thread( () -> setAutoContrastDisplayRange( bdvStackSource ) ).start();
 
-		setColor( filePath, bdvStackSource );
+//		setColor( filePath, bdvStackSource );
 
 		bdv = bdvStackSource.getBdvHandle();
 
-		imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
+		// TODO:
+		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
 
 		//Utils.updateBdv( bdv,1000 );
-	}
-
-	private void setColor( String filePath, BdvStackSource< ? > bdvStackSource )
-	{
-		if ( filePath.contains( "overview" ) )
-			bdvStackSource.setColor( OVERVIEW_EM_COLOR );
-
 	}
 
 	private void setAutoContrastDisplayRange( BdvStackSource< ? > bdvStackSource )

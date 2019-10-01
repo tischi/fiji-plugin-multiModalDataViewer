@@ -1,6 +1,6 @@
 package command;
 
-import de.embl.cba.mmdv.command.ViewMultipleBdvImagesCommand;
+import de.embl.cba.mmdv.command.MultiModalDataViewerCommand;
 import net.imagej.ImageJ;
 
 public class RunViewMultipleBdvImagesCommand
@@ -11,6 +11,6 @@ public class RunViewMultipleBdvImagesCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( ViewMultipleBdvImagesCommand.class, true );
+		ij.command().run( MultiModalDataViewerCommand.class, true );
 	}
 }
