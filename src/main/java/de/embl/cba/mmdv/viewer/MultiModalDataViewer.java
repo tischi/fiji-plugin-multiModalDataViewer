@@ -1,14 +1,13 @@
 package de.embl.cba.mmdv.viewer;
 
 import bdv.util.*;
+import bdv.viewer.DisplayMode;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
-import bdv.viewer.render.AccumulateProjectorFactory;
 import de.embl.cba.bdv.utils.BdvUtils;
 import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
-import de.embl.cba.mmdv.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.mmdv.bdv.ImageSource;
 import de.embl.cba.mmdv.rendertest.AccumulateAverageProjectorARGB;
 import mpicbg.spim.data.SpimData;
@@ -17,7 +16,6 @@ import mpicbg.spim.data.XmlIoSpimData;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.volatiles.VolatileARGBType;
 import net.imglib2.view.IntervalView;
@@ -115,7 +113,15 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		this.blendingMode = blendingMode;
 
 		for ( String filePath : inputFilePaths )
-			addToBdv( filePath );
+		{
+			try
+			{
+				addToBdv( filePath );
+			} catch ( SpimDataException e )
+			{
+				e.printStackTrace();
+			}
+		}
 
 		moveBdvViewToAxialZeroPosition( bdv.getBdvHandle() );
 
@@ -127,25 +133,27 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		showImages( BlendingMode.Sum );
 	}
 
-	private void addToBdv( String filePath )
+	private void addToBdv( String filePath ) throws SpimDataException
 	{
-		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
+//		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
 
 		BdvOptions options = createBdvOptions();
 
-//		final SpimData spimData = new XmlIoSpimData().load( filePath );
+		final SpimData spimData = new XmlIoSpimData().load( filePath );
 
 		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
-				source,
+				spimData,
 				options
-				);
-
+				).get( 0 );
 
 //		new Thread( () -> setAutoContrastDisplayRange( bdvStackSource ) ).start();
 
 //		setColor( filePath, bdvStackSource );
 
 		bdv = bdvStackSource.getBdvHandle();
+
+		// TODO: make this optional (or in fact control with own UI)
+		bdv.getViewerPanel().setDisplayMode( DisplayMode.SINGLE );
 
 		// TODO:
 		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
@@ -157,14 +165,22 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	{
 		BdvOptions options = BdvOptions.options()
 				.addTo( bdv )
-				.preferredSize( 800, 800 );
+				.preferredSize( 600, 600 );
 
+		options = addBlendingMode( options );
+
+		return options;
+	}
+
+	private BdvOptions addBlendingMode( BdvOptions options )
+	{
 		if ( blendingMode.equals( BlendingMode.Auto ) )
 			options = options.accumulateProjectorFactory( AccumulateEMAndFMProjectorARGB.factory );
 		else if ( blendingMode.equals( BlendingMode.Avg ) )
 			options = options.accumulateProjectorFactory( AccumulateAverageProjectorARGB.factory );
 		else if ( blendingMode.equals( BlendingMode.Sum ) )
 			options = options;
+
 		return options;
 	}
 
