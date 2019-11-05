@@ -16,6 +16,11 @@ public class ExploreXRayData
 
 		final ArrayList< File > paths = getFileList( new File( "/Volumes/cba/exchange/maxim" ), ".*.xml" );
 
-		new MultiModalDataViewer( paths );
+//		final ArrayList< File > subSet = new ArrayList<>();
+//		subSet.add( paths.get( 0 ) );
+//		subSet.add( paths.get( 1 ) );
+
+		final MultiModalDataViewer viewer = new MultiModalDataViewer( paths );
+		viewer.showImages( MultiModalDataViewer.BlendingMode.Avg );
 	}
 }

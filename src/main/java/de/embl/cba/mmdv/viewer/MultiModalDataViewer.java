@@ -3,13 +3,14 @@ package de.embl.cba.mmdv.viewer;
 import bdv.util.*;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
+import bdv.viewer.render.AccumulateProjectorFactory;
 import de.embl.cba.bdv.utils.BdvUtils;
 import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
-import de.embl.cba.bdv.utils.sources.ARGBConvertedRealSource;
 import de.embl.cba.mmdv.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.mmdv.bdv.ImageSource;
+import de.embl.cba.mmdv.rendertest.AccumulateAverageProjectorARGB;
 import mpicbg.spim.data.SpimData;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.XmlIoSpimData;
@@ -37,6 +38,14 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private BdvHandle bdv;
 	private List< ImageSource > imageSources;
 	private double contrastFactor = 0.1;
+	private BlendingMode blendingMode;
+
+	public enum BlendingMode
+	{
+		Avg,
+		Sum,
+		Auto
+	}
 
 	public MultiModalDataViewer( List< ? > inputFiles )
 	{
@@ -52,31 +61,17 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		{
 			throw new UnsupportedOperationException( "Input file list is neither of type String nor File." );
 		}
-
-		run();
 	}
 
 	public MultiModalDataViewer( String[] inputFilePaths )
 	{
 		this.inputFilePaths = Arrays.asList( inputFilePaths );
-		run();
 	}
 
 	public MultiModalDataViewer( File[] inputFiles )
 	{
 		setInputFilePaths( inputFiles );
-		run();
 	}
-
-	private void run( )
-	{
-		imageSources = new ArrayList<>(  );
-		showImages();
-		installBdvBehaviours();
-
-		// showUI();
-	}
-
 
 	private void installBdvBehaviours()
 	{
@@ -115,27 +110,34 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		ui.showUI();
 	}
 
-	private void showImages()
+	public void showImages( BlendingMode blendingMode )
 	{
+		this.blendingMode = blendingMode;
+
 		for ( String filePath : inputFilePaths )
 			addToBdv( filePath );
 
 		moveBdvViewToAxialZeroPosition( bdv.getBdvHandle() );
+
+		installBdvBehaviours();
+	}
+
+	public void showImages()
+	{
+		showImages( BlendingMode.Sum );
 	}
 
 	private void addToBdv( String filePath )
 	{
 		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
 
+		BdvOptions options = createBdvOptions();
+
+//		final SpimData spimData = new XmlIoSpimData().load( filePath );
+
 		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
 				source,
-				BdvOptions.options()
-						.addTo( bdv )
-						.accumulateProjectorFactory( AccumulateEMAndFMProjectorARGB.factory )
-						.preferredSize( 800, 800 )
-						.transformEventHandlerFactory(
-								new BehaviourTransformEventHandler3DWithoutRotation
-										.BehaviourTransformEventHandler3DFactory() )
+				options
 				);
 
 
@@ -149,6 +151,21 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
 
 		//Utils.updateBdv( bdv,1000 );
+	}
+
+	private BdvOptions createBdvOptions()
+	{
+		BdvOptions options = BdvOptions.options()
+				.addTo( bdv )
+				.preferredSize( 800, 800 );
+
+		if ( blendingMode.equals( BlendingMode.Auto ) )
+			options = options.accumulateProjectorFactory( AccumulateEMAndFMProjectorARGB.factory );
+		else if ( blendingMode.equals( BlendingMode.Avg ) )
+			options = options.accumulateProjectorFactory( AccumulateAverageProjectorARGB.factory );
+		else if ( blendingMode.equals( BlendingMode.Sum ) )
+			options = options;
+		return options;
 	}
 
 	private Source< VolatileARGBType > openVolatileARGBTypeSource( String filePath )
