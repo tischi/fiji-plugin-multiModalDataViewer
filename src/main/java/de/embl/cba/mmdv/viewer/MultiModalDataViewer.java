@@ -5,6 +5,7 @@ import bdv.viewer.DisplayMode;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.bdv.utils.Logger;
 import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
@@ -15,11 +16,13 @@ import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.XmlIoSpimData;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealPoint;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.volatiles.VolatileARGBType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.scijava.ui.behaviour.ClickBehaviour;
 import org.scijava.ui.behaviour.io.InputTriggerConfig;
 import org.scijava.ui.behaviour.util.Behaviours;
 
@@ -37,6 +40,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private List< ImageSource > imageSources;
 	private double contrastFactor = 0.1;
 	private BlendingMode blendingMode;
+	private boolean isFirstImage = true;
 
 	public enum BlendingMode
 	{
@@ -87,6 +91,27 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		BdvBehaviours.addViewCaptureBehaviour( bdv, behaviours, "C" );
 
 		BdvBehaviours.addPositionAndViewLoggingBehaviour( bdv, behaviours, "P" );
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> {
+
+			(new Thread( () -> {
+				final int currentSource = bdv.getViewerPanel().getVisibilityAndGrouping().getCurrentSource();
+				if ( currentSource == 0 ) return;
+				bdv.getViewerPanel().getVisibilityAndGrouping().setCurrentSource( currentSource - 1 );
+			} )).start();
+
+		}, "Go to previous source", "J" ) ;
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> {
+
+			(new Thread( () -> {
+				final int currentSource = bdv.getViewerPanel().getVisibilityAndGrouping().getCurrentSource();
+				if ( currentSource == bdv.getViewerPanel().getVisibilityAndGrouping().numSources() - 1  ) return;
+				bdv.getViewerPanel().getVisibilityAndGrouping().setCurrentSource( currentSource + 1 );
+			} )).start();
+
+		}, "Go to next source", "K" ) ;
+
 	}
 
 	private void setInputFilePaths( File[] inputFiles )
@@ -135,7 +160,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 	private void addToBdv( String filePath ) throws SpimDataException
 	{
-//		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
+		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
 
 		BdvOptions options = createBdvOptions();
 
@@ -146,14 +171,18 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 				options
 				).get( 0 );
 
+		// TODO: see how this is done in bdv-fiji
 //		new Thread( () -> setAutoContrastDisplayRange( bdvStackSource ) ).start();
 
 //		setColor( filePath, bdvStackSource );
 
 		bdv = bdvStackSource.getBdvHandle();
 
-		// TODO: make this optional (or in fact control with own UI)
-		bdv.getViewerPanel().setDisplayMode( DisplayMode.SINGLE );
+		if ( isFirstImage )
+		{
+			bdv.getViewerPanel().setDisplayMode( DisplayMode.SINGLE ); // TODO: make this optional (or in fact control with own UI)
+			isFirstImage = false;
+		}
 
 		// TODO:
 		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
