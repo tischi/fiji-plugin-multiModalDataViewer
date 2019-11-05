@@ -4,6 +4,7 @@ import bdv.util.*;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
 import de.embl.cba.bdv.utils.sources.ARGBConvertedRealSource;
@@ -20,6 +21,8 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.volatiles.VolatileARGBType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.scijava.ui.behaviour.io.InputTriggerConfig;
+import org.scijava.ui.behaviour.util.Behaviours;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -35,9 +38,21 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private List< ImageSource > imageSources;
 	private double contrastFactor = 0.1;
 
-	public MultiModalDataViewer( List< String > inputFilePaths )
+	public MultiModalDataViewer( List< ? > inputFiles )
 	{
-		this.inputFilePaths = inputFilePaths;
+		if ( inputFiles.get( 0 ) instanceof File )
+		{
+			setInputFilePaths( (List< File >) inputFiles );
+		}
+		else if ( inputFiles.get( 0 ) instanceof String  )
+		{
+			this.inputFilePaths = (List< String >) inputFiles;
+		}
+		else
+		{
+			throw new UnsupportedOperationException( "Input file list is neither of type String nor File." );
+		}
+
 		run();
 	}
 
@@ -53,20 +68,45 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		run();
 	}
 
-	private void setInputFilePaths( File[] inputFiles )
-	{
-		final List< File > files = Arrays.asList( inputFiles );
-
-		this.inputFilePaths = new ArrayList< >();
-		for (int i = 0; i < files.size(); i++)
-			this.inputFilePaths.add( files.get( i ).getAbsolutePath() );
-	}
-
 	private void run( )
 	{
 		imageSources = new ArrayList<>(  );
 		showImages();
+		installBdvBehaviours();
+
 		// showUI();
+	}
+
+
+	private void installBdvBehaviours()
+	{
+		Behaviours behaviours = new Behaviours( new InputTriggerConfig() );
+		behaviours.install( bdv.getTriggerbindings(), "" );
+
+		/**
+		 * TODO:
+		 * - Currently one cannot change the color, because the sources are
+		 * of ARGBType. This would be solved by being able to show SourceAndConverter.
+		 *
+		 */
+		BdvBehaviours.addDisplaySettingsBehaviour( bdv, behaviours, "D" );
+
+		BdvBehaviours.addViewCaptureBehaviour( bdv, behaviours, "C" );
+
+		BdvBehaviours.addPositionAndViewLoggingBehaviour( bdv, behaviours, "P" );
+	}
+
+	private void setInputFilePaths( File[] inputFiles )
+	{
+		final List< File > files = Arrays.asList( inputFiles );
+		setInputFilePaths( files );
+	}
+
+	private void setInputFilePaths( List< File > files )
+	{
+		this.inputFilePaths = new ArrayList< >();
+		for (int i = 0; i < files.size(); i++)
+			this.inputFilePaths.add( files.get( i ).getAbsolutePath() );
 	}
 
 	private void showUI()
@@ -85,9 +125,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 	private void addToBdv( String filePath )
 	{
-//		final SpimData spimData = openSpimData( filePath );
-
-		final Source< VolatileARGBType > source = SPIMDataReaders.openAsVolatileARGBTypeSource( filePath, 0 );
+		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
 
 		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
 				source,
@@ -111,6 +149,17 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
 
 		//Utils.updateBdv( bdv,1000 );
+	}
+
+	private Source< VolatileARGBType > openVolatileARGBTypeSource( String filePath )
+	{
+		Source< VolatileARGBType > source;
+
+		if ( filePath.endsWith( ".xml" ) )
+			source = SPIMDataReaders.openAsVolatileARGBTypeSource( filePath, 0 );
+		else
+			throw new UnsupportedOperationException( "File type not supported: " + filePath );
+		return source;
 	}
 
 	private void setAutoContrastDisplayRange( BdvStackSource< ? > bdvStackSource )

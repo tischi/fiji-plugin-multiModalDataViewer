@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>de.embl.cba</groupId>
 		<artifactId>pom-embl-cba</artifactId>
-		<version>0.3.6</version>
+		<version>0.3.10</version>
 	</parent>
 
 	<artifactId>fiji-plugin-multiModalDataViewer</artifactId>

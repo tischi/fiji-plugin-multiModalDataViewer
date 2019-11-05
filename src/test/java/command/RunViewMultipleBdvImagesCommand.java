@@ -1,6 +1,6 @@
 package command;
 
-import de.embl.cba.mmdv.command.MultiModalDataViewerCommand;
+import de.embl.cba.mmdv.command.OpenMultipleFilesInBdvCommand;
 import net.imagej.ImageJ;
 
 public class RunViewMultipleBdvImagesCommand
@@ -11,6 +11,6 @@ public class RunViewMultipleBdvImagesCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( MultiModalDataViewerCommand.class, true );
+		ij.command().run( OpenMultipleFilesInBdvCommand.class, true );
 	}
 }

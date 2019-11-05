@@ -72,11 +72,11 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 		behaviours = new Behaviours( new InputTriggerConfig() );
 		behaviours.install( bdv.getTriggerbindings(), "" );
 
-		installDisplaySettingsBehaviour();
+		installDisplaySettingsBehaviour( bdv, behaviours );
 		installViewCaptureBehaviour();
 	}
 
-	public void installDisplaySettingsBehaviour()
+	public static void installDisplaySettingsBehaviour( BdvHandle bdv, Behaviours behaviours )
 	{
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
 				BdvDialogs.showDisplaySettingsDialogForSourcesAtMousePosition(

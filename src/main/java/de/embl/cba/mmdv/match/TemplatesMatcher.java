@@ -1,7 +1,6 @@
 package de.embl.cba.mmdv.match;
 
 import de.embl.cba.bdv.utils.io.BdvRaiXYZCTExport;
-import de.embl.cba.mmdv.FileUtils;
 import de.embl.cba.mmdv.ImageIO;
 import de.embl.cba.mmdv.Utils;
 import de.embl.cba.mmdv.image.CalibratedRai;
@@ -86,7 +85,7 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 
 	private boolean createTemplateFileList()
 	{
-		templateFiles = FileUtils.getFileList(
+		templateFiles = Utils.getFileList(
 				settings.templatesInputDirectory, settings.templatesRegExp );
 
 		if ( templateFiles.size() == 0 )
