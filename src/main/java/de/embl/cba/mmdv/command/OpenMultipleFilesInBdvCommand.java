@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Plugin(type = Command.class, menuPath = "Plugins>BigDataViewer>Open>Open Multiple XML/HDF5 Images" )
+@Plugin(type = Command.class, menuPath = "Plugins>BigDataViewer>Open Multiple XML/HDF5" )
 public class OpenMultipleFilesInBdvCommand implements Command
 {
 	@Parameter ( visibility = ItemVisibility.MESSAGE  )
