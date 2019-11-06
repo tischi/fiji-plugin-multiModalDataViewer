@@ -23,10 +23,14 @@ public class OpenMultipleFilesInBdvCommand implements Command
 	@Parameter ( label = "Only consider files matching" )
 	public String regExp = ".*.xml";
 
+	@Parameter ( label = "Blending mode", choices = { "Avg", "Sum", "Auto" } )
+	public String blendingMode = "Avg";
+
 	public void run()
 	{
 		final ArrayList< String > validPaths = getValidPaths( regExp, inputFiles );
 		final MultiModalDataViewer viewer = new MultiModalDataViewer( validPaths );
+		viewer.showImages( MultiModalDataViewer.BlendingMode.valueOf( blendingMode ) );
 	}
 
 	private ArrayList< String > getValidPaths( String regExp, File[] paths )

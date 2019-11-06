@@ -148,7 +148,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 			}
 		}
 
-		moveBdvViewToAxialZeroPosition( bdv.getBdvHandle() );
+//		moveBdvViewToAxialZeroPosition( bdv.getBdvHandle() );
 
 		installBdvBehaviours();
 	}
@@ -185,6 +185,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		}
 
 		// TODO:
+		// autocontrast
 		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
 
 		//Utils.updateBdv( bdv,1000 );
