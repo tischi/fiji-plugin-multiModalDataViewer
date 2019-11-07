@@ -1,6 +1,10 @@
 package de.embl.cba.mmdv.viewer;
 
-import bdv.util.*;
+import bdv.tools.transformation.TransformedSource;
+import bdv.util.BdvFunctions;
+import bdv.util.BdvHandle;
+import bdv.util.BdvOptions;
+import bdv.util.BdvStackSource;
 import bdv.viewer.DisplayMode;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
@@ -9,11 +13,12 @@ import de.embl.cba.bdv.utils.Logger;
 import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
+import de.embl.cba.mmdv.Utils;
 import de.embl.cba.mmdv.bdv.ImageSource;
 import de.embl.cba.mmdv.rendertest.AccumulateAverageProjectorARGB;
+import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings;
-import de.embl.cba.transforms.utils.Transforms;
 import mpicbg.spim.data.SpimData;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.XmlIoSpimData;
@@ -21,7 +26,7 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealPoint;
+import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.volatiles.VolatileARGBType;
@@ -36,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static de.embl.cba.mmdv.BdvUtils.*;
+import static de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings.ThresholdMethod.*;
 
 public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 {
@@ -123,35 +128,47 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 		}, "Go to next source", "K" ) ;
 
-		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> {
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
+			prealignCurrentPlatynereisXRaySource( );
+		} )).start(), "Register Platy", "P" ) ;
+	}
 
-			(new Thread( () -> {
+	public void prealignCurrentPlatynereisXRaySource( )
+	{
+		// TODO: make all of this work for non-isotropic data
+		Logger.log( "Registering..." );
 
-				Logger.log( "Registering..." );
+		final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
 
-				final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
+		final int currentSource = bdv.getBdvHandle().getViewerPanel().getState().getCurrentSource();
+		final VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, currentSource );
+		final double[] calibration = new double[ 3 ];
+		voxelDimensions.dimensions( calibration );
+		final Source< ? > source = BdvUtils.getSource( bdv, currentSource );
+		final int level = BdvUtils.getLevel( source, settings.registrationResolution );
 
-				final int currentSource = bdv.getBdvHandle().getViewerPanel().getState().getCurrentSource();
-				final VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, currentSource );
-				final Source< ? > source = BdvUtils.getSource( bdv, currentSource );
-				final int level = BdvUtils.getLevel( source, settings.registrationResolution );
+		settings.showIntermediateResults = false;
+		settings.outputResolution = voxelDimensions.dimension( 0 ); // assuming isotropic
+		settings.invertImage = true;
+		settings.showIntermediateResults = false;
+		settings.inputCalibration = BdvUtils.getCalibration( source, level );
+		settings.thresholdMethod = Huang;
+		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
+		final RandomAccessibleInterval< R > rai = ( RandomAccessibleInterval< R >) source.getSource( 0, level );
+		registration.run( rai );
+		final AffineTransform3D registrationTransform = registration.getRegistrationTransform(
+				new double[]{1,1,1}, 1);
 
-				settings.showIntermediateResults = false;
-				settings.outputResolution = voxelDimensions.dimension( 0 ); // assuming isotropic
-				settings.invertImage = true;
+		System.out.println( registrationTransform );
+		final TransformedSource transformedSource = ( TransformedSource ) source;
+		transformedSource.setFixedTransform( registrationTransform );
 
-				final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
-				registration.run( source.getSource( 0, level ) );
-				registration.getRegistrationTransform( );
+		BdvUtils.repaint( bdv );
+		BdvUtils.moveToPosition( bdv, new double[]{0,0,0}, 0, 100 );
 
-			} )).start();
-
-		}, "Register Platy", "P" ) ;
-
-
-
-
-
+//		final RandomAccessibleInterval< R > fullRes = ( RandomAccessibleInterval< R >) source.getSource( 0, 0 );
+//		final RandomAccessibleInterval< R > arrayImg = Utils.copyAsArrayImg( fullRes );
+//		BdvFunctions.show( arrayImg, "fullRes", BdvOptions.options().sourceTransform( registrationTransform ) );
 	}
 
 	private void setInputFilePaths( File[] inputFiles )

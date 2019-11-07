@@ -24,5 +24,6 @@ public class ExploreXRayData
 		final MultiModalDataViewer viewer = new MultiModalDataViewer( paths );
 		viewer.setOpService( imageJ.op() );
 		viewer.showImages( MultiModalDataViewer.BlendingMode.Avg );
+//		viewer.prealignCurrentPlatynereisXRaySource();
 	}
 }
