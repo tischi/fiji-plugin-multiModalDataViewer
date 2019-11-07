@@ -15,7 +15,7 @@ public class ExploreXRayData
 		final ImageJ imageJ = new ImageJ();
 		imageJ.ui().showUI();
 
-		final ArrayList< File > paths = getFileList( new File( "/Volumes/cba/exchange/maxim/ver2" ), ".*.xml" );
+		final ArrayList< File > paths = getFileList( new File( "/Volumes/cba/exchange/maxim/ver2/2sources" ), ".*.xml" );
 
 //		final ArrayList< File > subSet = new ArrayList<>();
 //		subSet.add( paths.get( 0 ) );

@@ -13,10 +13,8 @@ import de.embl.cba.bdv.utils.Logger;
 import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
-import de.embl.cba.mmdv.Utils;
 import de.embl.cba.mmdv.bdv.ImageSource;
 import de.embl.cba.mmdv.rendertest.AccumulateAverageProjectorARGB;
-import de.embl.cba.morphometry.Algorithms;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings;
 import mpicbg.spim.data.SpimData;
@@ -52,6 +50,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private BlendingMode blendingMode;
 	private boolean isFirstImage = true;
 	private OpService opService = null;
+	private BdvOptions options;
 
 	public enum BlendingMode
 	{
@@ -129,11 +128,17 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		}, "Go to next source", "K" ) ;
 
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
-			prealignCurrentPlatynereisXRaySource( );
-		} )).start(), "Register Platy", "P" ) ;
+			prealignCurrentPlatynereisXRaySource( false );
+		} )).start(), "Register Platy Silent", "R" ) ;
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
+			prealignCurrentPlatynereisXRaySource( true );
+		} )).start(), "Register Platy", "shift R" ) ;
+
+
 	}
 
-	public void prealignCurrentPlatynereisXRaySource( )
+	public void prealignCurrentPlatynereisXRaySource( boolean showIntermediateResults )
 	{
 		// TODO: make all of this work for non-isotropic data
 		Logger.log( "Registering..." );
@@ -150,25 +155,19 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		settings.showIntermediateResults = false;
 		settings.outputResolution = voxelDimensions.dimension( 0 ); // assuming isotropic
 		settings.invertImage = true;
-		settings.showIntermediateResults = false;
+		settings.showIntermediateResults = showIntermediateResults;
 		settings.inputCalibration = BdvUtils.getCalibration( source, level );
 		settings.thresholdMethod = Huang;
 		final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
 		final RandomAccessibleInterval< R > rai = ( RandomAccessibleInterval< R >) source.getSource( 0, level );
 		registration.run( rai );
-		final AffineTransform3D registrationTransform = registration.getRegistrationTransform(
-				new double[]{1,1,1}, 1);
+		final AffineTransform3D registrationTransform = registration.getRegistrationTransform( new double[]{1,1,1}, 1);
 
-		System.out.println( registrationTransform );
 		final TransformedSource transformedSource = ( TransformedSource ) source;
 		transformedSource.setFixedTransform( registrationTransform );
 
 		BdvUtils.repaint( bdv );
-		BdvUtils.moveToPosition( bdv, new double[]{0,0,0}, 0, 100 );
-
-//		final RandomAccessibleInterval< R > fullRes = ( RandomAccessibleInterval< R >) source.getSource( 0, 0 );
-//		final RandomAccessibleInterval< R > arrayImg = Utils.copyAsArrayImg( fullRes );
-//		BdvFunctions.show( arrayImg, "fullRes", BdvOptions.options().sourceTransform( registrationTransform ) );
+		BdvUtils.moveToPosition( bdv, new double[]{ 0, 0, 0}, 0, 100 );
 	}
 
 	private void setInputFilePaths( File[] inputFiles )
@@ -217,9 +216,12 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 	private void addToBdv( String filePath ) throws SpimDataException
 	{
-		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
+		//Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
 
-		BdvOptions options = createBdvOptions();
+		if ( isFirstImage )
+			options = createBdvOptions();
+		else
+			options = options.addTo( bdv );
 
 		final SpimData spimData = new XmlIoSpimData().load( filePath );
 
@@ -235,23 +237,23 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 		bdv = bdvStackSource.getBdvHandle();
 
-		if ( isFirstImage )
-		{
-			bdv.getViewerPanel().setDisplayMode( DisplayMode.SINGLE ); // TODO: make this optional (or in fact control with own UI)
-			isFirstImage = false;
-		}
+//		if ( isFirstImage )
+//		{
+//			bdv.getViewerPanel().setDisplayMode( DisplayMode.SINGLE ); // TODO: make this optional (or in fact control with own UI)
+//			isFirstImage = false;
+//		}
 
 		// TODO:
 		// autocontrast
 		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
 
 		//Utils.updateBdv( bdv,1000 );
+		isFirstImage = false;
 	}
 
 	private BdvOptions createBdvOptions()
 	{
 		BdvOptions options = BdvOptions.options()
-				.addTo( bdv )
 				.preferredSize( 600, 600 );
 
 		options = addBlendingMode( options );
