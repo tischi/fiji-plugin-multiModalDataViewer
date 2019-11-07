@@ -167,6 +167,11 @@
 			<artifactId>junit</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>de.embl.cba</groupId>
+			<artifactId>fiji-plugin-morphometry</artifactId>
+		</dependency>
+
 	</dependencies>
 
 </project>

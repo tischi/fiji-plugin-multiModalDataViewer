@@ -11,9 +11,14 @@ import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
 import de.embl.cba.mmdv.bdv.ImageSource;
 import de.embl.cba.mmdv.rendertest.AccumulateAverageProjectorARGB;
+import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
+import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings;
+import de.embl.cba.transforms.utils.Transforms;
 import mpicbg.spim.data.SpimData;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.XmlIoSpimData;
+import mpicbg.spim.data.sequence.VoxelDimensions;
+import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
@@ -41,6 +46,7 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private double contrastFactor = 0.1;
 	private BlendingMode blendingMode;
 	private boolean isFirstImage = true;
+	private OpService opService = null;
 
 	public enum BlendingMode
 	{
@@ -73,6 +79,11 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	public MultiModalDataViewer( File[] inputFiles )
 	{
 		setInputFilePaths( inputFiles );
+	}
+
+	public void setOpService( OpService opService )
+	{
+		this.opService = opService;
 	}
 
 	private void installBdvBehaviours()
@@ -111,6 +122,35 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 			} )).start();
 
 		}, "Go to next source", "K" ) ;
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> {
+
+			(new Thread( () -> {
+
+				Logger.log( "Registering..." );
+
+				final PlatynereisRegistrationSettings settings = new PlatynereisRegistrationSettings();
+
+				final int currentSource = bdv.getBdvHandle().getViewerPanel().getState().getCurrentSource();
+				final VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, currentSource );
+				final Source< ? > source = BdvUtils.getSource( bdv, currentSource );
+				final int level = BdvUtils.getLevel( source, settings.registrationResolution );
+
+				settings.showIntermediateResults = false;
+				settings.outputResolution = voxelDimensions.dimension( 0 ); // assuming isotropic
+				settings.invertImage = true;
+
+				final PlatynereisRegistration< R > registration = new PlatynereisRegistration<>( settings, opService );
+				registration.run( source.getSource( 0, level ) );
+				registration.getRegistrationTransform( );
+
+			} )).start();
+
+		}, "Register Platy", "P" ) ;
+
+
+
+
 
 	}
 

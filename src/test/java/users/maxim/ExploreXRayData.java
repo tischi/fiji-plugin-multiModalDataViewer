@@ -12,7 +12,8 @@ public class ExploreXRayData
 {
 	public static void main( String[] args )
 	{
-		new ImageJ().ui().showUI();
+		final ImageJ imageJ = new ImageJ();
+		imageJ.ui().showUI();
 
 		final ArrayList< File > paths = getFileList( new File( "/Volumes/cba/exchange/maxim/ver2" ), ".*.xml" );
 
@@ -21,6 +22,7 @@ public class ExploreXRayData
 //		subSet.add( paths.get( 1 ) );
 
 		final MultiModalDataViewer viewer = new MultiModalDataViewer( paths );
+		viewer.setOpService( imageJ.op() );
 		viewer.showImages( MultiModalDataViewer.BlendingMode.Avg );
 	}
 }

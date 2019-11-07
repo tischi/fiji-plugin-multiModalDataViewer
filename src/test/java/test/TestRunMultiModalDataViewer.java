@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class TestRunMultiModalDataViewer
 {
-	@Test
+	//@Test
 	public static void main( String[] args )
 	{
 		final ArrayList< String > imagePaths = new ArrayList<>();
@@ -18,6 +18,6 @@ public class TestRunMultiModalDataViewer
 		imagePaths.add( TestRunMultiModalDataViewer.class.getResource(
 				"../test-data/bdv-images/fib-sem-volume-crop.xml" ).getFile() );
 
-		new MultiModalDataViewer( imagePaths );
+		new MultiModalDataViewer( imagePaths ).showImages();
 	}
 }
