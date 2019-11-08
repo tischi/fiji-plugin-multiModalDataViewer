@@ -5,7 +5,6 @@ import bdv.util.BdvFunctions;
 import bdv.util.BdvHandle;
 import bdv.util.BdvOptions;
 import bdv.util.BdvStackSource;
-import bdv.viewer.DisplayMode;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import de.embl.cba.bdv.utils.BdvUtils;
@@ -34,6 +33,7 @@ import org.scijava.ui.behaviour.ClickBehaviour;
 import org.scijava.ui.behaviour.io.InputTriggerConfig;
 import org.scijava.ui.behaviour.util.Behaviours;
 
+import javax.swing.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,6 +107,32 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 		BdvBehaviours.addPositionAndViewLoggingBehaviour( bdv, behaviours, "P" );
 
+		installSourceBrowsingBehaviour( behaviours );
+
+		installPlatynereisRegistrationBehaviour( behaviours );
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
+			printManualTransformOfCurrentSource();
+		} )).start(), "Print manual transform", "shift T" ) ;
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> SwingUtilities.invokeLater( () -> {
+			addSource();
+		} ), "Add source", "A" ) ;
+	}
+
+	private void installPlatynereisRegistrationBehaviour( Behaviours behaviours )
+	{
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
+			prealignCurrentPlatynereisXRaySource( false );
+		} )).start(), "Register Platy Silent", "R" ) ;
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
+			prealignCurrentPlatynereisXRaySource( true );
+		} )).start(), "Register Platy", "shift R" ) ;
+	}
+
+	private void installSourceBrowsingBehaviour( Behaviours behaviours )
+	{
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> {
 
 			(new Thread( () -> {
@@ -126,16 +152,6 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 			} )).start();
 
 		}, "Go to next source", "K" ) ;
-
-		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
-			prealignCurrentPlatynereisXRaySource( false );
-		} )).start(), "Register Platy Silent", "R" ) ;
-
-		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
-			prealignCurrentPlatynereisXRaySource( true );
-		} )).start(), "Register Platy", "shift R" ) ;
-
-
 	}
 
 	public void prealignCurrentPlatynereisXRaySource( boolean showIntermediateResults )
@@ -168,6 +184,34 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 		BdvUtils.repaint( bdv );
 		BdvUtils.moveToPosition( bdv, new double[]{ 0, 0, 0}, 0, 100 );
+	}
+
+	public void printManualTransformOfCurrentSource( )
+	{
+		final int currentSource = bdv.getBdvHandle().getViewerPanel().getState().getCurrentSource();
+		final Source< ? > source = BdvUtils.getSource( bdv, currentSource );
+		final TransformedSource< ? > transformedSource = ( TransformedSource ) source;
+		final AffineTransform3D affineTransform3D = new AffineTransform3D();
+		transformedSource.getFixedTransform( affineTransform3D );
+		Logger.log( source.getName() );
+		Logger.log( affineTransform3D.toString() );
+	}
+
+	public void addSource( )
+	{
+		final JFileChooser jFileChooser = new JFileChooser( );
+		if ( jFileChooser.showOpenDialog( bdv.getViewerPanel() ) == JFileChooser.APPROVE_OPTION )
+		{
+			final String absolutePath = jFileChooser.getSelectedFile().getAbsolutePath();
+			try
+			{
+				final SpimData spimData = new XmlIoSpimData().load( absolutePath );
+				BdvFunctions.show( spimData, BdvOptions.options().addTo( bdv ) );
+			} catch ( SpimDataException e )
+			{
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private void setInputFilePaths( File[] inputFiles )
