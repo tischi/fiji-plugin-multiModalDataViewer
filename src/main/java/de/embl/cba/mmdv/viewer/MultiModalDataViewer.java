@@ -23,6 +23,7 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -191,10 +192,15 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		final int currentSource = bdv.getBdvHandle().getViewerPanel().getState().getCurrentSource();
 		final Source< ? > source = BdvUtils.getSource( bdv, currentSource );
 		final TransformedSource< ? > transformedSource = ( TransformedSource ) source;
-		final AffineTransform3D affineTransform3D = new AffineTransform3D();
-		transformedSource.getFixedTransform( affineTransform3D );
+		final AffineTransform3D manualTransform = new AffineTransform3D();
+		transformedSource.getFixedTransform( manualTransform );
+		final AffineTransform3D baseTransform = new AffineTransform3D();
+		source.getSourceTransform( 0, 0, baseTransform );
+		final AffineTransform3D concatenate = baseTransform.copy().concatenate( manualTransform );
 		Logger.log( source.getName() );
-		Logger.log( affineTransform3D.toString() );
+		Logger.log( "Base transform:" + baseTransform.toString() );
+		Logger.log( "Additional manual transform:" + manualTransform.toString() );
+		Logger.log( "Full transform:" + concatenate.toString() );
 	}
 
 	public void addSource( )
