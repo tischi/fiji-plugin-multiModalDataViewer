@@ -1,17 +1,25 @@
 package de.embl.cba.mmdv.viewer;
 
+import bdv.tools.HelpDialog;
+import bdv.tools.InitializeViewerState;
+import bdv.tools.brightness.MinMaxGroup;
+import bdv.tools.brightness.SetupAssignments;
+import bdv.tools.transformation.ManualSourceTransforms;
 import bdv.tools.transformation.TransformedSource;
+import bdv.tools.transformation.XmlIoTransformedSources;
 import bdv.util.BdvFunctions;
 import bdv.util.BdvHandle;
 import bdv.util.BdvOptions;
 import bdv.util.BdvStackSource;
 import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
+import bdv.viewer.state.ViewerState;
 import de.embl.cba.bdv.utils.BdvUtils;
 import de.embl.cba.bdv.utils.Logger;
 import de.embl.cba.bdv.utils.behaviour.BdvBehaviours;
 import de.embl.cba.bdv.utils.io.SPIMDataReaders;
 import de.embl.cba.bdv.utils.render.AccumulateEMAndFMProjectorARGB;
+import de.embl.cba.mmdv.Utils;
 import de.embl.cba.mmdv.bdv.ImageSource;
 import de.embl.cba.mmdv.rendertest.AccumulateAverageProjectorARGB;
 import de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistration;
@@ -23,22 +31,32 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imagej.ops.OpService;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.realtransform.AffineTransform2D;
+import net.imglib2.histogram.DiscreteFrequencyDistribution;
+import net.imglib2.histogram.Histogram1d;
+import net.imglib2.histogram.Real1dBinMapper;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.volatiles.VolatileARGBType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 import org.scijava.ui.behaviour.ClickBehaviour;
 import org.scijava.ui.behaviour.io.InputTriggerConfig;
 import org.scijava.ui.behaviour.util.Behaviours;
 
 import javax.swing.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
 
 import static de.embl.cba.morphometry.registration.platynereis.PlatynereisRegistrationSettings.ThresholdMethod.*;
 
@@ -52,6 +70,9 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 	private boolean isFirstImage = true;
 	private OpService opService = null;
 	private BdvOptions options;
+	private HelpDialog  helpDialog;
+	private WeakHashMap< Source, String > sourceToXmlPath;
+	private WeakHashMap< Source, SpimData > sourceToSpimData;
 
 	public enum BlendingMode
 	{
@@ -86,6 +107,12 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		setInputFilePaths( inputFiles );
 	}
 
+	private void initHelpDialog()
+	{
+		final URL helpFile = Utils.class.getResource( "/MultiModalDataViewerHelp.html" );
+		helpDialog = new HelpDialog( null, helpFile );
+	}
+
 	public void setOpService( OpService opService )
 	{
 		this.opService = opService;
@@ -116,9 +143,18 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 			printManualTransformOfCurrentSource();
 		} )).start(), "Print manual transform", "shift T" ) ;
 
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> (new Thread( () -> {
+			saveSettingsXmlForCurrentSource();
+		} )).start(), "Save settings for current source", "ctrl S" ) ;
+
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> SwingUtilities.invokeLater( () -> {
 			addSource();
 		} ), "Add source", "A" ) ;
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) -> SwingUtilities.invokeLater( () -> {
+			helpDialog.setVisible( ! helpDialog.isVisible() );
+		} ), "Show additional help", "F2" ) ;
+
 	}
 
 	private void installPlatynereisRegistrationBehaviour( Behaviours behaviours )
@@ -203,6 +239,47 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		Logger.log( "Full transform:" + concatenate.toString() );
 	}
 
+	public void saveSettingsXmlForCurrentSource()
+	{
+		final int currentSource = bdv.getBdvHandle().getViewerPanel().getState().getCurrentSource();
+		final Source< ? > source = BdvUtils.getSource( bdv, currentSource );
+		final TransformedSource< ? > transformedSource = ( TransformedSource ) source;
+		final AffineTransform3D manualTransform = new AffineTransform3D();
+		transformedSource.getFixedTransform( manualTransform );
+		final AffineTransform3D baseTransform = new AffineTransform3D();
+		source.getSourceTransform( 0, 0, baseTransform );
+		final AffineTransform3D concatenate = baseTransform.copy().concatenate( manualTransform );
+		Logger.log( source.getName() );
+		Logger.log( "Base transform:" + baseTransform.toString() );
+		Logger.log( "Additional manual transform:" + manualTransform.toString() );
+		Logger.log( "Full transform:" + concatenate.toString() );
+
+		final XmlIoTransformedSources xmlIoTransformedSources = new XmlIoTransformedSources();
+		final ArrayList< AffineTransform3D > transforms = new ArrayList<>();
+		transforms.add( manualTransform );
+		final Element manualTransformXml = xmlIoTransformedSources.toXml( new ManualSourceTransforms( transforms ) );
+
+		final Element root = new Element( "Transformation" );
+		root.addContent( manualTransformXml );
+
+		final Document doc = new Document( root );
+		final XMLOutputter xout = new XMLOutputter( Format.getPrettyFormat() );
+
+		final String xmlPath = sourceToXmlPath.get( source );
+
+		final String settingsPath = xmlPath.replace( ".xml", ".settings.xml" );
+
+		Logger.log( "Saving settings: " + settingsPath );
+
+		try
+		{
+			xout.output( doc, new FileWriter( settingsPath ) );
+		} catch ( IOException e )
+		{
+			e.printStackTrace();
+		}
+	}
+
 	public void addSource( )
 	{
 		final JFileChooser jFileChooser = new JFileChooser( );
@@ -241,7 +318,12 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 
 	public void showImages( BlendingMode blendingMode )
 	{
+		initHelpDialog();
+
 		this.blendingMode = blendingMode;
+
+		sourceToXmlPath = new WeakHashMap<>();
+		sourceToSpimData = new WeakHashMap<>();
 
 		for ( String filePath : inputFilePaths )
 		{
@@ -264,41 +346,130 @@ public class MultiModalDataViewer< R extends RealType< R > & NativeType< R > >
 		showImages( BlendingMode.Sum );
 	}
 
-	private void addToBdv( String filePath ) throws SpimDataException
+	private void addToBdv( String xmlPath ) throws SpimDataException
 	{
-		//Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
+//		Source< VolatileARGBType > source = openVolatileARGBTypeSource( filePath );
 
 		if ( isFirstImage )
 			options = createBdvOptions();
 		else
 			options = options.addTo( bdv );
 
-		final SpimData spimData = new XmlIoSpimData().load( filePath );
+		final SpimData spimData = new XmlIoSpimData().load( xmlPath );
+
+		final Source< R > inputSource = BdvUtils.openSource( xmlPath, 0 );
+
+		final File settingsXml = new File( xmlPath.replace( ".xml", ".settings.xml" ) );
+
+		Settings settings = null;
+
+		if ( settingsXml.exists() )
+			settings = tryLoadSettings( settingsXml.getAbsolutePath() );
 
 		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
-				spimData,
+				inputSource,
 				options
-				).get( 0 );
+				);
 
-		// TODO: see how this is done in bdv-fiji
-//		new Thread( () -> setAutoContrastDisplayRange( bdvStackSource ) ).start();
+		if ( isFirstImage ) bdv = bdvStackSource.getBdvHandle();
+
+		final Source< ? > source = bdvStackSource.getSources().get( 0 ).getSpimSource();
+
+		sourceToXmlPath.put( source, xmlPath );
+//		sourceToSpimData.put( source, spimData );
+
+		if ( settings != null )
+		{
+			( ( TransformedSource ) source ).setFixedTransform( settings.transform );
+			BdvUtils.repaint( bdv );
+		}
 
 //		setColor( filePath, bdvStackSource );
 
-		bdv = bdvStackSource.getBdvHandle();
+		initBrightness( 0.001, 0.999, bdv.getViewerPanel().getState(), bdv.getSetupAssignments(), sourceToXmlPath.size() - 1  );
 
-//		if ( isFirstImage )
-//		{
-//			bdv.getViewerPanel().setDisplayMode( DisplayMode.SINGLE ); // TODO: make this optional (or in fact control with own UI)
-//			isFirstImage = false;
-//		}
+		options = options.sourceTransform( new AffineTransform3D() );
 
-		// TODO:
-		// autocontrast
-		//imageSources.add( new ImageSource( filePath, bdvStackSource, spimData ) );
-
-		//Utils.updateBdv( bdv,1000 );
 		isFirstImage = false;
+	}
+
+
+	public static void initBrightness(
+			final double cumulativeMinCutoff,
+			final double cumulativeMaxCutoff,
+			final ViewerState state,
+			final SetupAssignments setupAssignments,
+			int sourceIndex )
+	{
+
+		final Source< ? > source = state.getSources().get( sourceIndex ).getSpimSource();
+		final int timepoint = state.getCurrentTimepoint();
+		if ( !source.isPresent( timepoint ) )
+			return;
+		if ( !UnsignedShortType.class.isInstance( source.getType() ) )
+			return;
+		@SuppressWarnings( "unchecked" )
+		final RandomAccessibleInterval< UnsignedShortType > img = ( RandomAccessibleInterval< UnsignedShortType > ) source.getSource( timepoint, source.getNumMipmapLevels() - 1 );
+		final long z = ( img.min( 2 ) + img.max( 2 ) + 1 ) / 2;
+
+		final int numBins = 6535;
+		final Histogram1d< UnsignedShortType > histogram = new Histogram1d<>( Views.iterable( Views.hyperSlice( img, 2, z ) ), new Real1dBinMapper< UnsignedShortType >( 0, 65535, numBins, false ) );
+		final DiscreteFrequencyDistribution dfd = histogram.dfd();
+		final long[] bin = new long[] { 0 };
+		double cumulative = 0;
+		int i = 0;
+		for ( ; i < numBins && cumulative < cumulativeMinCutoff; ++i )
+		{
+			bin[ 0 ] = i;
+			cumulative += dfd.relativeFrequency( bin );
+		}
+		final int min = i * 65535 / numBins;
+		for ( ; i < numBins && cumulative < cumulativeMaxCutoff; ++i )
+		{
+			bin[ 0 ] = i;
+			cumulative += dfd.relativeFrequency( bin );
+		}
+		final int max = i * 65535 / numBins;
+		final MinMaxGroup minmax = setupAssignments.getMinMaxGroups().get( sourceIndex );
+		minmax.getMinBoundedValue().setCurrentValue( min );
+		minmax.getMaxBoundedValue().setCurrentValue( max );
+	}
+
+	private Settings tryLoadSettings( String xmlPath )
+	{
+		Settings settings = null;
+		try
+		{
+
+			settings = loadSettings( xmlPath );
+		} catch ( IOException e )
+		{
+			e.printStackTrace();
+		} catch ( JDOMException e )
+		{
+			e.printStackTrace();
+		}
+		return settings;
+	}
+
+	class Settings{
+		AffineTransform3D transform;
+	}
+
+	private Settings loadSettings( final String xmlFilename ) throws IOException, JDOMException
+	{
+		final SAXBuilder sax = new SAXBuilder();
+		final Document doc = sax.build( xmlFilename );
+		final Element root = doc.getRootElement();
+
+		final XmlIoTransformedSources io = new XmlIoTransformedSources();
+
+		final Element elem = root.getChild( io.getTagName() );
+		final List< AffineTransform3D > transforms = io.fromXml( elem ).getTransforms();
+
+		final Settings settings = new Settings();
+		settings.transform = transforms.get( 0 );
+		return settings;
 	}
 
 	private BdvOptions createBdvOptions()
