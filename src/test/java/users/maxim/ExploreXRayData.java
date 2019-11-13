@@ -15,7 +15,9 @@ public class ExploreXRayData
 		final ImageJ imageJ = new ImageJ();
 		imageJ.ui().showUI();
 
-		final ArrayList< File > paths = getFileList( new File( "/Volumes/cba/exchange/maxim/ver2/2sources" ), ".*.xml" );
+		final String excludeTransformedRegExp = "^(?!.*?(?:transformed)).*xml$";
+		final ArrayList< File > paths = getFileList( new File( "/Volumes/cba/exchange/maxim/ver2/2sources" ),
+				excludeTransformedRegExp );
 
 //		final ArrayList< File > subSet = new ArrayList<>();
 //		subSet.add( paths.get( 0 ) );
@@ -24,6 +26,8 @@ public class ExploreXRayData
 		final MultiModalDataViewer viewer = new MultiModalDataViewer( paths );
 		viewer.setOpService( imageJ.op() );
 		viewer.showImages( MultiModalDataViewer.BlendingMode.Avg );
-//		viewer.prealignCurrentPlatynereisXRaySource();
+//		viewer.saveSettingsXmlForCurrentSource();
+		viewer.prealignCurrentPlatynereisXRaySource( false );
+		viewer.saveSettingsXmlForCurrentSource();
 	}
 }

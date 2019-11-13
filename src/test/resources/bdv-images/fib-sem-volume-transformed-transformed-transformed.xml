@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SpimData version="0.2">
+  <BasePath type="relative">.</BasePath>
+  <SequenceDescription>
+    <ImageLoader format="bdv.hdf5">
+      <hdf5 type="relative">fib-sem-volume.h5</hdf5>
+    </ImageLoader>
+    <ViewSetups>
+      <ViewSetup>
+        <id>0</id>
+        <name>channel 1</name>
+        <size>497 517 201</size>
+        <voxelSize>
+          <unit>nm</unit>
+          <size>8.0 8.0 8.0</size>
+        </voxelSize>
+        <attributes>
+          <illumination>0</illumination>
+          <channel>1</channel>
+          <tile>0</tile>
+          <angle>0</angle>
+        </attributes>
+      </ViewSetup>
+      <Attributes name="illumination">
+        <Illumination>
+          <id>0</id>
+          <name>0</name>
+        </Illumination>
+      </Attributes>
+      <Attributes name="channel">
+        <Channel>
+          <id>1</id>
+          <name>1</name>
+        </Channel>
+      </Attributes>
+      <Attributes name="tile">
+        <Tile>
+          <id>0</id>
+          <name>0</name>
+        </Tile>
+      </Attributes>
+      <Attributes name="angle">
+        <Angle>
+          <id>0</id>
+          <name>0</name>
+        </Angle>
+      </Attributes>
+    </ViewSetups>
+    <Timepoints type="range">
+      <first>0</first>
+      <last>0</last>
+    </Timepoints>
+  </SequenceDescription>
+  <ViewRegistrations>
+    <ViewRegistration timepoint="0" setup="0">
+      <ViewTransform type="affine">
+        <Name>Additional transform</Name>
+        <affine>0.30498656601050683 -0.47498843382073574 0.0 -19.871700213803877 0.47498843382073574 0.30498656601050683 0.0 1635.6817074546973 0.0 0.0 0.5644739300537773 348.42085595697813</affine>
+      </ViewTransform>
+      <ViewTransform type="affine">
+        <Name>Additional transform</Name>
+        <affine>0.5403023058681398 -0.8414709848078965 0.0 270.1511529340699 0.8414709848078965 0.5403023058681398 0.0 420.73549240394823 0.0 0.0 1.0 0.0</affine>
+      </ViewTransform>
+      <ViewTransform type="affine">
+        <Name>Manual transform</Name>
+        <affine>0.5403023058681398 -0.8414709848078965 0.0 270.1511529340699 0.8414709848078965 0.5403023058681398 0.0 420.73549240394823 0.0 0.0 1.0 0.0</affine>
+      </ViewTransform>
+      <ViewTransform type="affine">
+        <affine>8.0 0.0 0.0 0.0 0.0 8.0 0.0 0.0 0.0 0.0 8.0 0.0</affine>
+      </ViewTransform>
+    </ViewRegistration>
+  </ViewRegistrations>
+</SpimData>
